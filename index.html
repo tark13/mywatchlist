@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d0d0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Вотчлист">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Мой Вотчлист</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0f;
+    --surface: #16161a;
+    --surface2: #1e1e24;
+    --border: #2a2a32;
+    --accent: #e8c547;
+    --accent2: #e05c5c;
+    --accent3: #5ce0b8;
+    --text: #f0eff5;
+    --muted: #6b6a75;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    min-height: 100dvh;
+    background-image: radial-gradient(ellipse at 20% 20%, #1a1a2e 0%, transparent 60%),
+                      radial-gradient(ellipse at 80% 80%, #1a0f0f 0%, transparent 60%);
+    padding-bottom: calc(80px + var(--safe-bottom));
+  }
+
+  header {
+    padding: calc(16px + var(--safe-top)) 20px 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 52px;
+    line-height: 0.9;
+    letter-spacing: 2px;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .add-btn-header {
+    background: var(--accent);
+    color: #0d0d0f;
+    border: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-bottom: 4px;
+    transition: all 0.2s;
+  }
+
+  .add-btn-header:active { transform: scale(0.93); }
+
+  .stats-row {
+    display: flex;
+    gap: 10px;
+    padding: 16px 20px 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .stats-row::-webkit-scrollbar { display: none; }
+
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .stat strong {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    color: var(--text);
+    letter-spacing: 1px;
+  }
+
+  .controls {
+    padding: 12px 20px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .filter-group {
+    display: flex;
+    gap: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 3px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .filter-group::-webkit-scrollbar { display: none; }
+
+  .filter-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    padding: 7px 14px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .filter-btn.active {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .grid {
+    padding: 16px 20px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: fadeIn 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .card.film::before { background: var(--accent); }
+  .card.series::before { background: var(--accent3); }
+  .card.anime::before { background: var(--accent2); }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .card-title {
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.3;
+    flex: 1;
+  }
+
+  .card-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted);
+    padding: 6px;
+    border-radius: 8px;
+    transition: all 0.2s;
+    font-size: 15px;
+    line-height: 1;
+  }
+
+  .icon-btn:active { transform: scale(0.88); }
+
+  .card-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .tag.type-film { background: #e8c54720; color: var(--accent); border: 1px solid #e8c54740; }
+  .tag.type-series { background: #5ce0b820; color: var(--accent3); border: 1px solid #5ce0b840; }
+  .tag.type-anime { background: #e05c5c20; color: var(--accent2); border: 1px solid #e05c5c40; }
+  .tag.genre { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+  .tag.status-watched { background: #5ce0b815; color: var(--accent3); border: 1px solid #5ce0b830; }
+  .tag.status-want { background: #e8c54715; color: var(--accent); border: 1px solid #e8c54730; }
+
+  .card-note {
+    font-size: 13px;
+    color: var(--muted);
+    font-style: italic;
+    font-weight: 300;
+    line-height: 1.5;
+    border-left: 2px solid var(--border);
+    padding-left: 10px;
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px 24px 0 0;
+    padding: 24px 24px calc(24px + var(--safe-bottom));
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    max-height: 90dvh;
+    overflow-y: auto;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  .modal-handle {
+    width: 40px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto -8px;
+  }
+
+  .modal h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 1px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-group label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+
+  .form-group input,
+  .form-group textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: none;
+    -webkit-appearance: none;
+  }
+
+  .form-group input:focus,
+  .form-group textarea:focus { border-color: var(--accent); }
+
+  .radio-group {
+    display: flex;
+    gap: 8px;
+  }
+
+  .radio-btn {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 6px;
+    cursor: pointer;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    transition: all 0.2s;
+  }
+
+  .radio-btn.selected {
+    background: var(--surface);
+    color: var(--text);
+    border-color: var(--accent);
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .btn-cancel {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+  }
+
+  .btn-save {
+    flex: 2;
+    background: var(--accent);
+    border: none;
+    color: #0d0d0f;
+    padding: 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  .btn-save:active { transform: scale(0.97); }
+
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+    font-weight: 300;
+  }
+
+  .empty .big {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 48px;
+    color: #2a2a32;
+    letter-spacing: 2px;
+  }
+
+  /* Install banner */
+  .install-banner {
+    display: none;
+    margin: 12px 20px 0;
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 12px 16px;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+  }
+
+  .install-banner.show { display: flex; }
+  .install-banner span { flex: 1; color: var(--muted); }
+  .install-banner strong { color: var(--text); }
+
+  .btn-install {
+    background: var(--accent);
+    color: #0d0d0f;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .btn-dismiss {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>МОЙ<br><span>ВОТЧЛИСТ</span></h1>
+  <button class="add-btn-header" onclick="openModal()">+</button>
+</header>
+
+<div class="install-banner" id="installBanner">
+  <span>📲 <strong>Установи как приложение</strong> — работает офлайн!</span>
+  <button class="btn-install" id="installBtn">Установить</button>
+  <button class="btn-dismiss" onclick="dismissInstall()">✕</button>
+</div>
+
+<div class="stats-row" id="statsRow"></div>
+
+<div class="controls">
+  <div class="filter-group" id="typeFilter">
+    <button class="filter-btn active" data-type="all">Все</button>
+    <button class="filter-btn" data-type="film">🎬 Фильмы</button>
+    <button class="filter-btn" data-type="series">📺 Сериалы</button>
+    <button class="filter-btn" data-type="anime">✨ Аниме</button>
+  </div>
+  <div class="filter-group" id="statusFilter">
+    <button class="filter-btn active" data-status="all">Все</button>
+    <button class="filter-btn" data-status="want">👀 Хочу</button>
+    <button class="filter-btn" data-status="watched">✅ Посмотрел</button>
+  </div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h2 id="modalTitle">ДОБАВИТЬ</h2>
+
+    <div class="form-group">
+      <label>Название</label>
+      <input type="text" id="inputTitle" placeholder="Название...">
+    </div>
+
+    <div class="form-group">
+      <label>Тип</label>
+      <div class="radio-group" id="typeRadio">
+        <div class="radio-btn selected" data-val="film">🎬 Фильм</div>
+        <div class="radio-btn" data-val="series">📺 Сериал</div>
+        <div class="radio-btn" data-val="anime">✨ Аниме</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Статус</label>
+      <div class="radio-group" id="statusRadio">
+        <div class="radio-btn selected" data-val="want">👀 Хочу посмотреть</div>
+        <div class="radio-btn" data-val="watched">✅ Посмотрел</div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Жанр</label>
+      <input type="text" id="inputGenre" placeholder="Триллер, Комедия...">
+    </div>
+
+    <div class="form-group">
+      <label>Заметка</label>
+      <textarea id="inputNote" rows="2" placeholder="Кто посоветовал, где смотреть..."></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Отмена</button>
+      <button class="btn-save" onclick="saveItem()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Register service worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js');
+    });
+  }
+
+  // PWA Install prompt
+  let deferredPrompt;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (!localStorage.getItem('installDismissed')) {
+      document.getElementById('installBanner').classList.add('show');
+    }
+  });
+
+  document.getElementById('installBtn').addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    document.getElementById('installBanner').classList.remove('show');
+  });
+
+  function dismissInstall() {
+    document.getElementById('installBanner').classList.remove('show');
+    localStorage.setItem('installDismissed', '1');
+  }
+
+  // App logic
+  const STORAGE_KEY = 'watchlist_v1';
+  let items = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  let editId = null;
+  let filterType = 'all';
+  let filterStatus = 'all';
+
+  const typeLabels = { film: '🎬 Фильм', series: '📺 Сериал', anime: '✨ Аниме' };
+  const statusLabels = { want: 'Хочу посмотреть', watched: 'Посмотрел' };
+
+  function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function render() {
+    const grid = document.getElementById('grid');
+    let filtered = items.filter(i => {
+      if (filterType !== 'all' && i.type !== filterType) return false;
+      if (filterStatus !== 'all' && i.status !== filterStatus) return false;
+      return true;
+    });
+
+    if (!filtered.length) {
+      grid.innerHTML = '<div class="empty"><div class="big">ПУСТО</div><div>Нажми + чтобы добавить</div></div>';
+    } else {
+      grid.innerHTML = filtered.map(item => `
+        <div class="card ${item.type}">
+          <div class="card-header">
+            <div class="card-title">${escHtml(item.title)}</div>
+            <div class="card-actions">
+              <button class="icon-btn" onclick="toggleStatus('${item.id}')">${item.status === 'watched' ? '👀' : '✅'}</button>
+              <button class="icon-btn" onclick="editItem('${item.id}')">✏️</button>
+              <button class="icon-btn" onclick="deleteItem('${item.id}')">✕</button>
+            </div>
+          </div>
+          <div class="card-tags">
+            <span class="tag type-${item.type}">${typeLabels[item.type]}</span>
+            <span class="tag ${item.status === 'watched' ? 'status-watched' : 'status-want'}">${statusLabels[item.status]}</span>
+            ${item.genre ? `<span class="tag genre">${escHtml(item.genre)}</span>` : ''}
+          </div>
+          ${item.note ? `<div class="card-note">${escHtml(item.note)}</div>` : ''}
+        </div>
+      `).join('');
+    }
+
+    const total = items.length;
+    const watched = items.filter(i => i.status === 'watched').length;
+    const films = items.filter(i => i.type === 'film').length;
+    const series = items.filter(i => i.type === 'series').length;
+    const anime = items.filter(i => i.type === 'anime').length;
+
+    document.getElementById('statsRow').innerHTML = [
+      `<div class="stat"><strong>${total}</strong> всего</div>`,
+      `<div class="stat"><strong>${watched}</strong> просмотрено</div>`,
+      `<div class="stat"><strong>${total - watched}</strong> в очереди</div>`,
+      films ? `<div class="stat"><strong>${films}</strong> фильмов</div>` : '',
+      series ? `<div class="stat"><strong>${series}</strong> сериалов</div>` : '',
+      anime ? `<div class="stat"><strong>${anime}</strong> аниме</div>` : '',
+    ].join('');
+  }
+
+  function openModal(id = null) {
+    editId = id;
+    document.getElementById('modalOverlay').classList.add('open');
+    document.getElementById('modalTitle').textContent = id ? 'РЕДАКТИРОВАТЬ' : 'ДОБАВИТЬ';
+    if (id) {
+      const item = items.find(i => i.id === id);
+      document.getElementById('inputTitle').value = item.title;
+      document.getElementById('inputGenre').value = item.genre || '';
+      document.getElementById('inputNote').value = item.note || '';
+      setRadio('typeRadio', item.type);
+      setRadio('statusRadio', item.status);
+    } else {
+      document.getElementById('inputTitle').value = '';
+      document.getElementById('inputGenre').value = '';
+      document.getElementById('inputNote').value = '';
+      setRadio('typeRadio', 'film');
+      setRadio('statusRadio', 'want');
+    }
+    setTimeout(() => document.getElementById('inputTitle').focus(), 300);
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+    editId = null;
+  }
+
+  function setRadio(groupId, val) {
+    document.querySelectorAll(`#${groupId} .radio-btn`).forEach(b => {
+      b.classList.toggle('selected', b.dataset.val === val);
+    });
+  }
+
+  function getRadio(groupId) {
+    return document.querySelector(`#${groupId} .radio-btn.selected`)?.dataset.val;
+  }
+
+  function saveItem() {
+    const title = document.getElementById('inputTitle').value.trim();
+    if (!title) { document.getElementById('inputTitle').focus(); return; }
+    const data = {
+      title,
+      type: getRadio('typeRadio'),
+      status: getRadio('statusRadio'),
+      genre: document.getElementById('inputGenre').value.trim(),
+      note: document.getElementById('inputNote').value.trim(),
+    };
+    if (editId) {
+      const idx = items.findIndex(i => i.id === editId);
+      items[idx] = { ...items[idx], ...data };
+    } else {
+      items.unshift({ id: Date.now().toString(), ...data });
+    }
+    save(); render(); closeModal();
+  }
+
+  function deleteItem(id) { items = items.filter(i => i.id !== id); save(); render(); }
+  function editItem(id) { openModal(id); }
+  function toggleStatus(id) {
+    const item = items.find(i => i.id === id);
+    item.status = item.status === 'watched' ? 'want' : 'watched';
+    save(); render();
+  }
+
+  document.getElementById('typeFilter').addEventListener('click', e => {
+    const btn = e.target.closest('.filter-btn');
+    if (!btn) return;
+    document.querySelectorAll('#typeFilter .filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filterType = btn.dataset.type;
+    render();
+  });
+
+  document.getElementById('statusFilter').addEventListener('click', e => {
+    const btn = e.target.closest('.filter-btn');
+    if (!btn) return;
+    document.querySelectorAll('#statusFilter .filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filterStatus = btn.dataset.status;
+    render();
+  });
+
+  document.getElementById('typeRadio').addEventListener('click', e => {
+    const btn = e.target.closest('.radio-btn');
+    if (btn) setRadio('typeRadio', btn.dataset.val);
+  });
+
+  document.getElementById('statusRadio').addEventListener('click', e => {
+    const btn = e.target.closest('.radio-btn');
+    if (btn) setRadio('statusRadio', btn.dataset.val);
+  });
+
+  document.getElementById('modalOverlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('modalOverlay')) closeModal();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+  });
+
+  render();
+</script>
+</body>
+</html>
