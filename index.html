@@ -105,7 +105,52 @@
   .card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
   .card-title-wrap { flex: 1; min-width: 0; }
   .card-title { font-size: 14px; font-weight: 500; line-height: 1.3; }
-  .card-year { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .card-year-row { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+  .card-year { font-size: 11px; color: var(--muted); }
+  .trailer-btn {
+    font-size: 10px; font-weight: 500; color: var(--accent2);
+    background: #e05c5c18; border: 1px solid #e05c5c35;
+    border-radius: 5px; padding: 2px 7px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; letter-spacing: 0.3px;
+    transition: all 0.2s; white-space: nowrap;
+  }
+  .trailer-btn:active { transform: scale(0.93); background: #e05c5c30; }
+
+  /* Trailer modal */
+  .trailer-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.92); backdrop-filter: blur(6px);
+    z-index: 200; align-items: center; justify-content: center; padding: 20px;
+  }
+  .trailer-overlay.open { display: flex; }
+  .trailer-box {
+    width: 100%; max-width: 560px;
+    display: flex; flex-direction: column; gap: 12px;
+    animation: fadeIn 0.25s ease;
+  }
+  .trailer-header { display: flex; justify-content: space-between; align-items: center; }
+  .trailer-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1px; color: var(--text); }
+  .trailer-close {
+    background: var(--surface); border: 1px solid var(--border); color: var(--muted);
+    width: 36px; height: 36px; border-radius: 10px; cursor: pointer;
+    font-size: 16px; display: flex; align-items: center; justify-content: center;
+  }
+  .trailer-frame {
+    width: 100%; aspect-ratio: 16/9; border-radius: 14px; overflow: hidden;
+    background: #000; border: 1px solid var(--border);
+  }
+  .trailer-frame iframe { width: 100%; height: 100%; border: none; display: block; }
+  .trailer-loading {
+    width: 100%; aspect-ratio: 16/9; border-radius: 14px;
+    background: var(--surface); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 12px; color: var(--muted); font-size: 13px;
+  }
+  .trailer-spinner {
+    width: 28px; height: 28px; border: 3px solid var(--border);
+    border-top-color: var(--accent2); border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
   .card-actions { display: flex; gap: 2px; flex-shrink: 0; }
 
   .icon-btn {
@@ -353,6 +398,22 @@
   </div>
 </div>
 
+<!-- TRAILER MODAL -->
+<div class="trailer-overlay" id="trailerOverlay" onclick="closeTrailer(event)">
+  <div class="trailer-box">
+    <div class="trailer-header">
+      <div class="trailer-title" id="trailerTitle"></div>
+      <button class="trailer-close" onclick="closeTrailer()">✕</button>
+    </div>
+    <div id="trailerContent">
+      <div class="trailer-loading">
+        <div class="trailer-spinner"></div>
+        <span>Загружаем трейлер...</span>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
   const TMDB_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI0NGUyNmVhMmY4OGJkODI2NGQ1NzBjY2VkMmU0Zjk1NSIsIm5iZiI6MTc3Mjc1MTU0Ny40NTI5OTk4LCJzdWIiOiI2OWFhMGFiYmRhMDgwM2JmZjlhYzFmMDYiLCJzY29wZXMiOlsiYXBpX3JlYWQiXSwidmVyc2lvbiI6MX0.U8Qbu5Jv4z0jiZWvY3b95I4f2_jUj98c-unkjPIV1V8';
   const TMDB_BASE = 'https://api.themoviedb.org/3';
@@ -418,7 +479,10 @@
           <div class="card-header">
             <div class="card-title-wrap">
               <div class="card-title">${esc(item.title)}</div>
-              ${item.year ? `<div class="card-year">${esc(item.year)}</div>` : ''}
+              ${item.year || item.tmdbId ? `<div class="card-year-row">
+                ${item.year ? `<div class="card-year">${esc(item.year)}</div>` : ''}
+                ${item.tmdbId ? `<button class="trailer-btn" onclick="openTrailer('${item.id}')">▶ трейлер</button>` : ''}
+              </div>` : ''}
             </div>
             <div class="card-actions">
               <button class="icon-btn" onclick="toggleStatus('${item.id}')">${item.status==='watched'?'👀':'✅'}</button>
@@ -605,7 +669,73 @@
     save(); render(); closeModal();
   }
 
-  function deleteItem(id) { items = items.filter(i => i.id !== id); save(); render(); }
+  // --- Trailer ---
+  async function openTrailer(itemId) {
+    const item = items.find(i => i.id === itemId);
+    if (!item?.tmdbId) return;
+
+    document.getElementById('trailerTitle').textContent = item.title;
+    document.getElementById('trailerContent').innerHTML = `
+      <div class="trailer-loading">
+        <div class="trailer-spinner"></div>
+        <span>Загружаем трейлер...</span>
+      </div>`;
+    document.getElementById('trailerOverlay').classList.add('open');
+
+    try {
+      const mediaType = item.type === 'film' ? 'movie' : 'tv';
+      const res = await fetch(
+        `${TMDB_BASE}/${mediaType}/${item.tmdbId}/videos?language=ru-RU`,
+        { headers: { Authorization: `Bearer ${TMDB_TOKEN}` } }
+      );
+      const data = await res.json();
+      let videos = data.results || [];
+
+      // Prefer Russian trailer, fallback to English
+      let trailer = videos.find(v => v.type === 'Trailer' && v.site === 'YouTube')
+        || videos.find(v => v.site === 'YouTube');
+
+      // If no Russian results, try English
+      if (!trailer) {
+        const res2 = await fetch(
+          `${TMDB_BASE}/${mediaType}/${item.tmdbId}/videos?language=en-US`,
+          { headers: { Authorization: `Bearer ${TMDB_TOKEN}` } }
+        );
+        const data2 = await res2.json();
+        videos = data2.results || [];
+        trailer = videos.find(v => v.type === 'Trailer' && v.site === 'YouTube')
+          || videos.find(v => v.site === 'YouTube');
+      }
+
+      if (trailer) {
+        document.getElementById('trailerContent').innerHTML = `
+          <div class="trailer-frame">
+            <iframe src="https://www.youtube.com/embed/${trailer.key}?autoplay=1&rel=0"
+              allow="autoplay; encrypted-media" allowfullscreen></iframe>
+          </div>`;
+      } else {
+        document.getElementById('trailerContent').innerHTML = `
+          <div class="trailer-loading">
+            <span style="font-size:28px">😔</span>
+            <span>Трейлер не найден</span>
+          </div>`;
+      }
+    } catch(e) {
+      document.getElementById('trailerContent').innerHTML = `
+        <div class="trailer-loading">
+          <span style="font-size:28px">📡</span>
+          <span>Нет подключения к интернету</span>
+        </div>`;
+    }
+  }
+
+  function closeTrailer(e) {
+    if (e && e.target !== document.getElementById('trailerOverlay')) return;
+    document.getElementById('trailerOverlay').classList.remove('open');
+    document.getElementById('trailerContent').innerHTML = '';
+  }
+
+
   function editItem(id) { openModal(id); }
   function toggleStatus(id) {
     const item = items.find(i => i.id === id);
